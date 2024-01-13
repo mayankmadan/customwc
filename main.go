@@ -68,7 +68,7 @@ func main() {
 	flag.Parse()
 	input := flag.Args()
 
-	var file io.Reader
+	var file *os.File
 	var fileName string = ""
 	var err error
 
@@ -112,5 +112,6 @@ func main() {
 	}
 
 	fmt.Printf("%s %s\n", output, fileName)
+	file.Close()
 
 }
