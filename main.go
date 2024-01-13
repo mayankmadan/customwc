@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 )
 
@@ -45,12 +46,7 @@ func (processor *WordCountProcessor) process(line []byte) {
 	processor.value += len(bytes.Fields(line))
 }
 
-func processFile(fileName string, processors []Processor) {
-	file, err := os.Open(fileName)
-	if err != nil {
-		fmt.Printf("Fatal Error: %e\n", err)
-	}
-
+func processFile(file io.Reader, processors []Processor) {
 	fileReader := bufio.NewReader(file)
 
 	for {
@@ -65,12 +61,30 @@ func processFile(fileName string, processors []Processor) {
 }
 
 func main() {
-	fileName := os.Args[len(os.Args)-1]
 	countBytesFlag := flag.Bool("c", false, "Count number of bytes in the file")
 	countLinesFlag := flag.Bool("l", false, "Count number of lines in the file")
 	countWordFlag := flag.Bool("w", false, "Count number of words in the file")
 
 	flag.Parse()
+	input := flag.Args()
+
+	var file io.Reader
+	var fileName string = ""
+	var err error
+
+	if len(input) == 0 {
+		file = os.Stdin
+	} else if len(input) == 1 {
+		fileName = input[0]
+		file, err = os.Open(input[0])
+	} else {
+		err = fmt.Errorf("invalid arguments")
+	}
+
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
+	}
 
 	var processors []Processor = make([]Processor, 0, 3)
 
@@ -90,7 +104,7 @@ func main() {
 		processors = append(processors, &ByteCountProcessor{}, &WordCountProcessor{}, &LineCountProcessor{})
 	}
 
-	processFile(fileName, processors)
+	processFile(file, processors)
 
 	output := ""
 	for _, processor := range processors {
