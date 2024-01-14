@@ -2,62 +2,29 @@ package main
 
 import (
 	"bufio"
-	"bytes"
 	"flag"
 	"fmt"
 	"io"
 	"os"
 )
 
-type Processor interface {
-	process(line []byte)
-	getValue() int
-}
-
-type ValueGetter struct {
-	value int
-}
-
-func (v ValueGetter) getValue() int {
-	return v.value
-}
-
-type ByteCountProcessor struct {
-	ValueGetter
-}
-
-func (processor *ByteCountProcessor) process(line []byte) {
-	processor.value = processor.value + len(line)
-}
-
-type LineCountProcessor struct {
-	ValueGetter
-}
-
-func (processor *LineCountProcessor) process(line []byte) {
-	processor.value += 1
-}
-
-type WordCountProcessor struct {
-	ValueGetter
-}
-
-func (processor *WordCountProcessor) process(line []byte) {
-	processor.value += len(bytes.Fields(line))
-}
-
-func processFile(file io.Reader, processors []Processor) {
+func processFile(file io.Reader, processors []Processor) error {
 	fileReader := bufio.NewReader(file)
 
 	for {
-		line, _, err := fileReader.ReadLine()
+		line, isPrefix, err := fileReader.ReadLine()
 		if err != nil {
-			break
+			if err == io.EOF {
+				break
+			}
+			return fmt.Errorf("error reading file")
 		}
 		for _, processor := range processors {
-			processor.process(line)
+			processor.process(line, isPrefix)
 		}
 	}
+
+	return nil
 }
 
 func main() {
@@ -69,6 +36,8 @@ func main() {
 	input := flag.Args()
 
 	var file *os.File
+	defer file.Close()
+
 	var fileName string = ""
 	var err error
 
@@ -104,7 +73,11 @@ func main() {
 		processors = append(processors, &ByteCountProcessor{}, &WordCountProcessor{}, &LineCountProcessor{})
 	}
 
-	processFile(file, processors)
+	err = processFile(file, processors)
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
+	}
 
 	output := ""
 	for _, processor := range processors {
@@ -112,6 +85,4 @@ func main() {
 	}
 
 	fmt.Printf("%s %s\n", output, fileName)
-	file.Close()
-
 }
