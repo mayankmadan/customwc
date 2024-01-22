@@ -20,7 +20,7 @@ This is a custom implementation of the classic word count utility in Go. It coun
 - -w : Count words
 If no flags are specified, all metrics are counted.
 
-Examples
+### Examples
 Count words only in file:
 
 `customwc -w file.txt`
